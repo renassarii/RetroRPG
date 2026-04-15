@@ -1,6 +1,3 @@
-# IDE (JetBrains)
 .idea/
-
-# Python Cache
 __pycache__/
 *.pyc
