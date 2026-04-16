@@ -75,7 +75,8 @@ class Game(arcade.Window):
         # =========================
         self.menu = ["SCHLAG", "MAGIE", "ITEM", "FLUCHT"]
         self.selected = 0
-
+        self.menu_2 = ["Mana potion", "Health potion"]
+        self.selected_2 = 0
         self.message = ""
 
         # movement
@@ -193,6 +194,8 @@ class Game(arcade.Window):
         self.draw_hp_bar(200, 410, self.player_hp, arcade.color.GREEN)
         self.draw_hp_bar(600, 410, self.enemy_hp, arcade.color.RED)
 
+        self.draw_bp_bar(200, 395, self.bp, arcade.color.CYAN)
+
         arcade.draw_text("DU", 170, 430, arcade.color.WHITE, 14)
         arcade.draw_text("FRANZ", 570, 430, arcade.color.WHITE, 14)
 
@@ -235,13 +238,28 @@ class Game(arcade.Window):
             arcade.color.DARK_RED
         )
 
-        fill = (hp / self.max_hp) * width
+        fill = max(0, (hp / self.max_hp) * width)
 
         arcade.draw_rect_filled(
             arcade.rect.XYWH(x - (width - fill) / 2, y, fill, height),
             color
         )
 
+    def draw_bp_bar(self, x, y, bp, color):
+        width = 160
+        height = 12
+
+        arcade.draw_rect_filled(
+            arcade.rect.XYWH(x, y, width, height),
+            arcade.color.DARK_BLUE
+        )
+
+        fill = (bp / self.max_bp) * width
+
+        arcade.draw_rect_filled(
+            arcade.rect.XYWH(x - (width - fill) / 2, y, fill, height),
+            color
+        )
     # =========================
     # UPDATE MOVEMENT (nur explore)
     # =========================
@@ -302,6 +320,12 @@ class Game(arcade.Window):
             if key == arcade.key.RIGHT:
                 self.selected = (self.selected + 1) % len(self.menu)
 
+            if key == arcade.key.UP:
+                self.selected_2 = (self.selected_2 - 1) % len(self.menu_2)
+
+            if key == arcade.key.DOWN:
+                self.selected_2 = (self.selected_2 + 1) % len(self.menu_2)
+
             if key == arcade.key.SPACE:
                 self.do_action()
 
@@ -346,9 +370,15 @@ class Game(arcade.Window):
                 self.message = "you don't have enough bp"
 
         elif action == "ITEM":
-            heal = 20
-            self.player_hp = min(self.max_hp, self.player_hp + heal)
-            self.message = f"+{heal} HP"
+            pick = self.menu_2[self.selected_2]
+            if pick == "Health potion":
+                heal = 20
+                self.player_hp = min(self.max_hp, self.player_hp + heal)
+                self.message = f"+{heal} HP"
+            elif pick == "Mana potion":
+                bp = 20
+                self.bp = min(self.max_bp, self.bp + bp)
+                self.message = f"+{bp} bp"
 
         elif action == "FLUCHT":
             if random.random() > 0.5:
