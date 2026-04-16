@@ -65,6 +65,9 @@ class Game(arcade.Window):
         self.enemy_hp = 100
         self.max_hp = 100
 
+        self.bp = 20
+        self.max_bp = 20
+
         self.set_spawn_points()
 
         # =========================
@@ -103,7 +106,7 @@ class Game(arcade.Window):
         self.player.center_x = 200
         self.player.center_y = 320
 
-        # 🔥 NEU erstellen (WICHTIG!)
+
         self.enemy = arcade.Sprite(
             load_texture_from_url(url + "assets/images/characters/Franz.png"),
             2
@@ -197,6 +200,14 @@ class Game(arcade.Window):
         arcade.draw_rect_filled(
             arcade.rect.XYWH(400, 80, 760, 140),
             arcade.color.BLACK
+        )
+        # BP ANZEIGE
+        arcade.draw_text(
+            f"BP: {self.bp}/{self.max_bp}",
+            20,
+            20,
+            arcade.color.CYAN,
+            16
         )
 
         arcade.draw_rect_outline(
@@ -306,19 +317,33 @@ class Game(arcade.Window):
         action = self.menu[self.selected]
 
         if action == "SCHLAG":
-            crit = random.randint(1, 2)
-            if crit == 1:
-                dmg = 15
-            if crit == 2:
+            crit = random.randint(1, 10)
+            if crit == 10:
                 dmg = 15 + random.randint(1,5)
-                print("you got a crit")
-            self.enemy_hp -= dmg
-            self.message = f"⚔ {dmg}"
+                self.enemy_hp -= dmg
+                self.message = f"you got a crit ⚔ {dmg}"
+            else:
+                dmg = 15
+                self.enemy_hp -= dmg
+                self.message =f"⚔ {dmg}"
+
 
         elif action == "MAGIE":
-            dmg = 10
-            self.enemy_hp -= dmg
-            self.message = f"✨ {dmg}"
+
+            cost = 3
+
+            if self.bp >= cost:
+
+                dmg = 15
+
+                self.bp -= cost
+
+                self.enemy_hp -= dmg
+
+                self.message = f"✨ {dmg}"
+
+            else:
+                self.message = "you don't have enough bp"
 
         elif action == "ITEM":
             heal = 20
