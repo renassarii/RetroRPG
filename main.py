@@ -10,21 +10,64 @@ HEIGHT = 450
 PLAYER_SPEED = 3
 
 url = "https://raw.githubusercontent.com/renassarii/RetroRPG/main/"
+
 # =========================
 # DIALOG
 # =========================
 dialogues = {
-    1: [
-        "wuff du hund",
-        "geh auf die knie und bell wenns da nit gfallt",
-        "wuff"
-    ]
+    1: {
+        "name": "Franz",
+        "lines":[
+            "wtf how did you get here?",
+            "isn't the harbor closed?",
+            "you shouldn't be here do you know what type of things live here?",
+            "do you even know how to use magic?",
+        ]
+    },
+    2: {
+        "name": "Luka",
+        "lines":[
+            "who tf are you and why can a dog speak to me?"
+        ]
+    },
+    3:{
+        "name": "Franz",
+        "lines":[
+            "I am no dog bitch",
+            "And answer my fucking question"
+        ]
+    },
+    4:{
+        "name": "Luka",
+        "lines":[
+            "Don't lie to me there is no something like magic"
+        ]
+    },
+    5:{
+        "name": "Franz",
+        "lines":[
+            "okay your fucked"
+        ]
+    },
+    6:{
+        "name": "Franz",
+        "lines":[
+            "Look I will only explain this once",
+            "You have Punch that's the most basic attack you just go up to him and smack him",
+            "You can use Magic you just channel your Mana(Bp) and just release a spell you only have one right now",
+            "You can get Items on this Island i will give you 5 Heal and Mana potions",
+            "At last the pussy move is running away with Escape.",
+            "Now fight me"
+        ]
+    }
 }
+
 
 def load_texture_from_url(url):
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
-    return arcade.Texture(name =url,image= img)
+    return arcade.Texture(name=url, image=img)
+
 
 class Game(arcade.Window):
     def __init__(self):
@@ -37,7 +80,6 @@ class Game(arcade.Window):
         self.state = "explore"
         self.dialog_index = 0
 
-
         # =========================
         # LOADING PICS
         # =========================
@@ -46,6 +88,14 @@ class Game(arcade.Window):
 
         self.background1 = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
         self.gameover = load_texture_from_url(url + "assets/images/backgrounds/gameover.png")
+
+        # =========================
+        # ITEM TEST
+        # =========================
+        self.item_icons = {
+            "Mana potion": url + "assets/images/characters/Franz.png",
+            "Health potion": url + "assets/images/characters/gandalf.png"
+        }
 
         # =========================
         # SPRITES
@@ -70,55 +120,81 @@ class Game(arcade.Window):
 
         self.set_spawn_points()
 
+        # dialog control
+        self.current_dialog_id = 1
+        self.story_step = 0
+
         # =========================
         # MENU
         # =========================
-        self.menu = ["SCHLAG", "MAGIE", "ITEM", "FLUCHT"]
+        self.menu = ["Punch", "Magic", "Item", "Escape"]
         self.selected = 0
         self.menu_2 = ["Mana potion", "Health potion"]
         self.selected_2 = 0
         self.message = ""
 
-        # movement
+        # =========================
+        # ITEM TEXTURES
+        # =========================
+        self.item_textures = {}
+        for item, img_url in self.item_icons.items():
+            self.item_textures[item] = load_texture_from_url(img_url)
+
         self.keys_held = set()
+
+    def do_action(self):
+        action = self.menu[self.selected]
+
+        if action == "Punch":
+            self.enemy_hp -= 15
+            self.message = "⚔ 15"
+
+        elif action == "Magic":
+            if self.bp >= 3:
+                self.bp -= 3
+                self.enemy_hp -= 15
+                self.message = "✨ 15"
+            else:
+                self.message = "Not enough BP"
+
+        elif action == "Item":
+            item = self.menu_2[self.selected_2]
+
+            if item == "Health potion":
+                self.player_hp = min(self.max_hp, self.player_hp + 20)
+                self.message = "+20 HP"
+
+            elif item == "Mana potion":
+                self.bp = min(self.max_bp, self.bp + 20)
+                self.message = "+20 BP"
+
+        elif action == "Escape":
+            if random.random() > 0.5:
+                self.state = "explore"
+                self.message = "Ran away!"
+
+        if self.enemy_hp > 0:
+            self.player_hp -=10
+
+        if self.enemy_hp <= 0:
+            self.state = "explore"
+            self.enemy.kill()
+        if self.player_hp <= 0:
+            self.state = "gameover"
+
 
     def set_spawn_points(self):
         self.player.center_x = 200
         self.player.center_y = 320
         self.enemy.center_x = 600
         self.enemy.center_y = 320
-    # =========================
-    # POSITION FIX (KAMPF SETUP)
-    # =========================
+
     def start_battle_positions(self):
-        # unter HP Bars positionieren
         self.player.center_x = 200
         self.player.center_y = 320
-
         self.enemy.center_x = 600
         self.enemy.center_y = 320
 
-
-
-    def reset_game(self):
-        self.player_hp = 100
-        self.enemy_hp = 100
-
-        self.player.center_x = 200
-        self.player.center_y = 320
-
-
-        self.enemy = arcade.Sprite(
-            load_texture_from_url(url + "assets/images/characters/Franz.png"),
-            2
-        )
-
-        self.enemy_list = arcade.SpriteList()
-        self.enemy_list.append(self.enemy)
-
-        self.state = "explore"
-        self.message = ""
-        self.set_spawn_points()
     # =========================
     # DRAW
     # =========================
@@ -127,56 +203,51 @@ class Game(arcade.Window):
         if self.state == "gameover":
             arcade.draw_texture_rect(
                 self.gameover,
-                arcade.rect.XYWH(
-                    self.width // 2,
-                    self.height // 2,
-                    self.width,
-                    self.height
-                )
+                arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height)
             )
-
-
-            arcade.draw_text(
-                "Drücke R zum Neustart",
-                self.width / 2,
-                80,
-                arcade.color.WHITE,
-                20,
-                anchor_x="center"
-            )
+            arcade.draw_text("Drücke R zum Neustart",
+                             self.width / 2, 80,
+                             arcade.color.WHITE, 20,
+                             anchor_x="center")
             return
+
         arcade.draw_texture_rect(
             self.background1,
-            arcade.rect.XYWH(
-                self.width // 2,
-                self.height // 2,
-                self.width,
-                self.height
-            )
+            arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height)
         )
 
-        # =========================
-        # EXPLORE MODE
-        # =========================
+        arcade.draw_texture_rect(
+            self.background1,
+            arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height)
+        )
+
         if self.state == "explore":
             self.player_list.draw()
             self.enemy_list.draw()
             return
 
-        # =========================
-        # DIALOG MODE
-        # =========================
+
         if self.state == "dialog":
             self.player_list.draw()
             self.enemy_list.draw()
 
             arcade.draw_rect_filled(
-                arcade.rect.XYWH(400, 80, 760, 140),
+                arcade.rect.XYWH(400, 80, 3000, 140),
                 arcade.color.BLACK
             )
 
+
+            # ✅ FIXED DIALOG ACCESS
             arcade.draw_text(
-                dialogues[1][self.dialog_index],
+                dialogues[self.current_dialog_id]["name"],
+                40,
+                100,
+                arcade.color.WHITE,
+                18
+            )
+
+            arcade.draw_text(
+                dialogues[self.current_dialog_id]["lines"][self.dialog_index],
                 120,
                 70,
                 arcade.color.WHITE,
@@ -190,33 +261,16 @@ class Game(arcade.Window):
         self.player_list.draw()
         self.enemy_list.draw()
 
-        # HP
         self.draw_hp_bar(200, 410, self.player_hp, arcade.color.GREEN)
         self.draw_hp_bar(600, 410, self.enemy_hp, arcade.color.RED)
-
         self.draw_bp_bar(200, 395, self.bp, arcade.color.CYAN)
 
-        arcade.draw_text("DU", 170, 430, arcade.color.WHITE, 14)
+        arcade.draw_text("Gypsy Luka", 170, 430, arcade.color.WHITE, 14)
         arcade.draw_text("FRANZ", 570, 430, arcade.color.WHITE, 14)
 
-        # UI BOX
         arcade.draw_rect_filled(
             arcade.rect.XYWH(400, 80, 760, 140),
             arcade.color.BLACK
-        )
-        # BP ANZEIGE
-        arcade.draw_text(
-            f"BP: {self.bp}/{self.max_bp}",
-            20,
-            20,
-            arcade.color.CYAN,
-            16
-        )
-
-        arcade.draw_rect_outline(
-            arcade.rect.XYWH(400, 80, 760, 140),
-            arcade.color.WHITE,
-            3
         )
 
         x = 200
@@ -225,6 +279,29 @@ class Game(arcade.Window):
             arcade.draw_text(item, x + i * 150, 70, color, 18)
 
         arcade.draw_text(self.message, 250, 20, arcade.color.WHITE, 14)
+
+        if self.menu[self.selected] == "Item":
+
+            popup_x = 450
+            popup_y = 200
+
+            arcade.draw_rect_filled(
+                arcade.rect.XYWH(popup_x, popup_y, 300, 160),
+                arcade.color.BLACK
+            )
+
+            for i, item in enumerate(self.menu_2):
+                y = popup_y + 40 - i * 60
+
+                texture = self.item_textures[item]
+
+                arcade.draw_texture_rect(
+                    texture,
+                    arcade.rect.XYWH(popup_x - 80, y, 40, 40)
+                )
+
+                color = arcade.color.YELLOW if i == self.selected_2 else arcade.color.WHITE
+                arcade.draw_text(item, popup_x - 20, y - 10, color, 14)
 
     # =========================
     # HP BAR
@@ -260,11 +337,8 @@ class Game(arcade.Window):
             arcade.rect.XYWH(x - (width - fill) / 2, y, fill, height),
             color
         )
-    # =========================
-    # UPDATE MOVEMENT (nur explore)
-    # =========================
-    def on_update(self, delta_time):
 
+    def on_update(self, delta_time):
         if self.state != "explore":
             return
 
@@ -277,41 +351,37 @@ class Game(arcade.Window):
         if arcade.key.D in self.keys_held:
             self.player.center_x += PLAYER_SPEED
 
-    # =========================
-    # INPUT
-    # =========================
     def on_key_press(self, key, modifiers):
-
         self.keys_held.add(key)
-        # Restart
-        if self.state == "gameover" and key == arcade.key.R:
-            self.reset_game()
 
-        # ESC FULLSCREEN
-        if key == arcade.key.ESCAPE:
-            self.set_fullscreen(not self.fullscreen)
-
-        # =========================
-        # START DIALOG
-        # =========================
+        # enter dialogue
         if self.state == "explore" and key == arcade.key.E:
             if self.player.collides_with_sprite(self.enemy):
                 self.state = "dialog"
                 self.dialog_index = 0
+                self.current_dialog_id = 1
 
-        # =========================
-        # DIALOG NEXT
-        # =========================
+        # dialog progression
         elif self.state == "dialog" and key == arcade.key.SPACE:
             self.dialog_index += 1
 
-            if self.dialog_index >= len(dialogues[1]):
-                self.state = "battle"
-                self.start_battle_positions()
+            if self.dialog_index >= len(dialogues[self.current_dialog_id]["lines"]):
+                self.dialog_index = 0
+                self.story_step += 1
 
-        # =========================
-        # BATTLE
-        # =========================
+                if self.story_step == 1:
+                    self.current_dialog_id = 2
+                elif self.story_step == 2:
+                    self.current_dialog_id = 3
+                elif self.story_step == 3:
+                    self.current_dialog_id = 4
+                elif self.story_step == 4:
+                    self.current_dialog_id = 5
+                elif self.story_step == 5:
+                    self.current_dialog_id = 6
+                else:
+                    self.state = "battle"
+                    self.start_battle_positions()
         elif self.state == "battle":
 
             if key == arcade.key.LEFT:
@@ -326,83 +396,12 @@ class Game(arcade.Window):
             if key == arcade.key.DOWN:
                 self.selected_2 = (self.selected_2 + 1) % len(self.menu_2)
 
-            if key == arcade.key.SPACE:
+            if key == arcade.key.SPACE :
                 self.do_action()
 
     def on_key_release(self, key, modifiers):
         if key in self.keys_held:
             self.keys_held.remove(key)
-
-    # =========================
-    # BATTLE LOGIC
-    # =========================
-    def do_action(self):
-
-        action = self.menu[self.selected]
-
-        if action == "SCHLAG":
-            crit = random.randint(1, 10)
-            if crit == 10:
-                dmg = 15 + random.randint(1,5)
-                self.enemy_hp -= dmg
-                self.message = f"you got a crit ⚔ {dmg}"
-            else:
-                dmg = 15
-                self.enemy_hp -= dmg
-                self.message =f"⚔ {dmg}"
-
-
-        elif action == "MAGIE":
-
-            cost = 3
-
-            if self.bp >= cost:
-
-                dmg = 15
-
-                self.bp -= cost
-
-                self.enemy_hp -= dmg
-
-                self.message = f"✨ {dmg}"
-
-            else:
-                self.message = "you don't have enough bp"
-
-        elif action == "ITEM":
-            pick = self.menu_2[self.selected_2]
-            if pick == "Health potion":
-                heal = 20
-                self.player_hp = min(self.max_hp, self.player_hp + heal)
-                self.message = f"+{heal} HP"
-            elif pick == "Mana potion":
-                bp = 20
-                self.bp = min(self.max_bp, self.bp + bp)
-                self.message = f"+{bp} bp"
-
-        elif action == "FLUCHT":
-            if random.random() > 0.5:
-                self.state = "explore"
-                self.message = "Geflohen!"
-                return
-            else:
-                self.message = "Flucht fehlgeschlagen!"
-
-        # enemy turn
-        if self.enemy_hp > 0:
-            self.player_hp -= 10
-
-        if self.enemy_hp <= 0:
-            if self.enemy_hp <= 0:
-                self.message = "franz ist tot"
-                self.enemy.kill()
-                self.state = "explore"
-
-        if self.player_hp <= 0:
-            self.state = "gameover"
-
-
-
 
 
 if __name__ == "__main__":
