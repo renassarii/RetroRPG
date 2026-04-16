@@ -31,7 +31,8 @@ class Game(arcade.Window):
         super().__init__(WIDTH, HEIGHT, "RPG SYSTEM", fullscreen=True)
         self.set_fullscreen(True)
 
-        arcade.set_background_color(arcade.color.DARK_SLATE_GRAY)
+        background_texture = load_texture_from_url(url + "assets/images/backgrounds/forest.png")
+        arcade.set_background(arcade.color.DARK_SLATE_BLUE)
 
         # =========================
         # STATE
@@ -243,17 +244,22 @@ class Game(arcade.Window):
         action = self.menu[self.selected]
 
         if action == "SCHLAG":
-            dmg = random.randint(10, 20)
+            crit = random.randint(1, 2)
+            if crit == 1:
+                dmg = 15
+            if crit == 2:
+                dmg = 15 + random.randint(1,5)
+                print("you got a crit")
             self.enemy_hp -= dmg
             self.message = f"⚔ {dmg}"
 
         elif action == "MAGIE":
-            dmg = random.randint(15, 30)
+            dmg = 10
             self.enemy_hp -= dmg
             self.message = f"✨ {dmg}"
 
         elif action == "ITEM":
-            heal = random.randint(10, 25)
+            heal = 20
             self.player_hp = min(self.max_hp, self.player_hp + heal)
             self.message = f"+{heal} HP"
 
@@ -268,6 +274,13 @@ class Game(arcade.Window):
         # enemy turn
         if self.enemy_hp > 0:
             self.player_hp -= random.randint(5, 15)
+
+        if self.enemy_hp == 0:
+            self.message = "franz der köpek is tot"
+            self.state = "explore"
+
+        if self.player_hp == 0:
+
 
 
 if __name__ == "__main__":
