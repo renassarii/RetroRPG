@@ -6,7 +6,7 @@ HEIGHT = 450
 
 PLAYER_SPEED = 3
 
-
+url = "https://raw.githubusercontent.com/renassarii/RetroRPG/main/"
 # =========================
 # DIALOG
 # =========================
@@ -35,8 +35,8 @@ class Game(arcade.Window):
         # =========================
         # SPRITES
         # =========================
-        self.player = arcade.Sprite("character/gandalf.png", 2)
-        self.enemy = arcade.Sprite("character/Franz.png", 2)
+        self.player = arcade.Sprite(url + "assets/images/character/gandalf.png", 2)
+        self.enemy = arcade.Sprite(url +"assets/images/character/Franz.png", 2)
 
         self.player_list = arcade.SpriteList()
         self.enemy_list = arcade.SpriteList()
