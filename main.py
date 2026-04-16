@@ -37,6 +37,7 @@ class Game(arcade.Window):
         self.state = "explore"
         self.dialog_index = 0
 
+
         # =========================
         # LOADING PICS
         # =========================
@@ -44,6 +45,7 @@ class Game(arcade.Window):
         enemy_texture = load_texture_from_url(url + "assets/images/characters/Franz.png")
 
         self.background1 = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
+        self.gameover = load_texture_from_url(url + "assets/images/backgrounds/gameover.png")
 
         # =========================
         # SPRITES
@@ -63,6 +65,8 @@ class Game(arcade.Window):
         self.enemy_hp = 100
         self.max_hp = 100
 
+        self.set_spawn_points()
+
         # =========================
         # MENU
         # =========================
@@ -74,6 +78,11 @@ class Game(arcade.Window):
         # movement
         self.keys_held = set()
 
+    def set_spawn_points(self):
+        self.player.center_x = 200
+        self.player.center_y = 320
+        self.enemy.center_x = 600
+        self.enemy.center_y = 320
     # =========================
     # POSITION FIX (KAMPF SETUP)
     # =========================
@@ -85,11 +94,53 @@ class Game(arcade.Window):
         self.enemy.center_x = 600
         self.enemy.center_y = 320
 
+
+
+    def reset_game(self):
+        self.player_hp = 100
+        self.enemy_hp = 100
+
+        self.player.center_x = 200
+        self.player.center_y = 320
+
+        # 🔥 NEU erstellen (WICHTIG!)
+        self.enemy = arcade.Sprite(
+            load_texture_from_url(url + "assets/images/characters/Franz.png"),
+            2
+        )
+
+        self.enemy_list = arcade.SpriteList()
+        self.enemy_list.append(self.enemy)
+
+        self.state = "explore"
+        self.message = ""
+        self.set_spawn_points()
     # =========================
     # DRAW
     # =========================
     def on_draw(self):
         self.clear()
+        if self.state == "gameover":
+            arcade.draw_texture_rect(
+                self.gameover,
+                arcade.rect.XYWH(
+                    self.width // 2,
+                    self.height // 2,
+                    self.width,
+                    self.height
+                )
+            )
+
+
+            arcade.draw_text(
+                "Drücke R zum Neustart",
+                self.width / 2,
+                80,
+                arcade.color.WHITE,
+                20,
+                anchor_x="center"
+            )
+            return
         arcade.draw_texture_rect(
             self.background1,
             arcade.rect.XYWH(
@@ -203,6 +254,9 @@ class Game(arcade.Window):
     def on_key_press(self, key, modifiers):
 
         self.keys_held.add(key)
+        # Restart
+        if self.state == "gameover" and key == arcade.key.R:
+            self.reset_game()
 
         # ESC FULLSCREEN
         if key == arcade.key.ESCAPE:
@@ -281,14 +335,16 @@ class Game(arcade.Window):
 
         # enemy turn
         if self.enemy_hp > 0:
-            self.player_hp -= random.randint(5, 15)
+            self.player_hp -= 10
 
         if self.enemy_hp <= 0:
-            self.message = "franz der köpek is tot"
-            self.state = "explore"
+            if self.enemy_hp <= 0:
+                self.message = "franz ist tot"
+                self.enemy.kill()
+                self.state = "explore"
 
         if self.player_hp <= 0:
-            self.state = "explore"
+            self.state = "gameover"
 
 
 
