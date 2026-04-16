@@ -31,9 +31,6 @@ class Game(arcade.Window):
         super().__init__(WIDTH, HEIGHT, "RPG SYSTEM", fullscreen=True)
         self.set_fullscreen(True)
 
-        background_texture = load_texture_from_url(url + "assets/images/backgrounds/forest.png")
-        arcade.set_background(arcade.color.DARK_SLATE_BLUE)
-
         # =========================
         # STATE
         # =========================
@@ -45,6 +42,8 @@ class Game(arcade.Window):
         # =========================
         player_texture = load_texture_from_url(url + "assets/images/characters/gandalf.png")
         enemy_texture = load_texture_from_url(url + "assets/images/characters/Franz.png")
+
+        self.background1 = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
 
         # =========================
         # SPRITES
@@ -91,6 +90,15 @@ class Game(arcade.Window):
     # =========================
     def on_draw(self):
         self.clear()
+        arcade.draw_texture_rect(
+            self.background1,
+            arcade.rect.XYWH(
+                self.width // 2,
+                self.height // 2,
+                self.width,
+                self.height
+            )
+        )
 
         # =========================
         # EXPLORE MODE
@@ -275,11 +283,14 @@ class Game(arcade.Window):
         if self.enemy_hp > 0:
             self.player_hp -= random.randint(5, 15)
 
-        if self.enemy_hp == 0:
+        if self.enemy_hp <= 0:
             self.message = "franz der köpek is tot"
             self.state = "explore"
 
-        if self.player_hp == 0:
+        if self.player_hp <= 0:
+            self.state = "explore"
+
+
 
 
 
