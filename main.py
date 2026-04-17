@@ -7,7 +7,7 @@ from PIL import Image
 WIDTH = 800
 HEIGHT = 450
 
-PLAYER_SPEED = 3
+PLAYER_SPEED = 1.5
 
 url = "https://raw.githubusercontent.com/renassarii/RetroRPG/main/"
 
@@ -93,6 +93,7 @@ class Game(arcade.Window):
         super().__init__(WIDTH, HEIGHT, "RPG SYSTEM", fullscreen=True)
         self.set_fullscreen(True)
 
+
         # =========================
         # STATE
         # =========================
@@ -109,6 +110,9 @@ class Game(arcade.Window):
         self.background1 = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
         self.gameover = load_texture_from_url(url + "assets/images/backgrounds/gameover.png")
 
+
+
+        self.setup_map()
         # =========================
         # ITEM TEST
         # =========================
@@ -371,6 +375,8 @@ class Game(arcade.Window):
             arcade.draw_text(magic, x + i * 150, 70, color, 18)
 
         arcade.draw_text(self.message, 250, 20, arcade.color.WHITE, 14)
+
+
         if self.menu[self.selected] == "Magic":
 
             popup_x = 250
@@ -453,6 +459,17 @@ class Game(arcade.Window):
             color
         )
 
+    def setup_map(self):
+        screen_w = self.width
+        screen_h = self.height
+
+        img = Image.open(BytesIO(
+            requests.get(url + "assets/images/backgrounds/hintergrund.png").content
+        )).convert("RGB")
+
+        self.map_img = img.resize((screen_w, screen_h))
+        self.map_pixels = self.map_img.load()
+
     def draw_bp_bar(self, x, y, bp, color):
         width = 160
         height = 12
@@ -469,6 +486,33 @@ class Game(arcade.Window):
             color
         )
 
+    def is_water(self, x, y):
+        img_x = int(x)
+        img_y = self.map_img.height - 1 - int(y)
+
+        if img_x < 0 or img_y < 0 or img_x >= self.map_img.width or img_y >= self.map_img.height:
+            return True
+
+        r, g, b = self.map_pixels[img_x, img_y]
+
+        # besserer Wasser-Check
+        return b > 140 and r < 80 and g < 120
+
+    def is_blocked(self, x, y):
+        points = [
+            (0, 0),
+            (10, 0), (-10, 0),
+            (0, 10), (0, -10),
+            (10, 10), (-10, 10),
+            (10, -10), (-10, -10),
+        ]
+
+        for ox, oy in points:
+            if self.is_water(x + ox, y + oy):
+                return True
+
+        return False
+
     def on_update(self, delta_time):
         if self.state != "explore":
             return
@@ -478,14 +522,27 @@ class Game(arcade.Window):
             if self.message_timer <= 0:
                 self.message = ""
 
+        dx = 0
+        dy = 0
+
         if arcade.key.W in self.keys_held:
-            self.player.center_y += PLAYER_SPEED
+            dy += PLAYER_SPEED
         if arcade.key.S in self.keys_held:
-            self.player.center_y -= PLAYER_SPEED
+            dy -= PLAYER_SPEED
         if arcade.key.A in self.keys_held:
-            self.player.center_x -= PLAYER_SPEED
+            dx -= PLAYER_SPEED
         if arcade.key.D in self.keys_held:
-            self.player.center_x += PLAYER_SPEED
+            dx += PLAYER_SPEED
+
+        new_x = self.player.center_x + dx
+        new_y = self.player.center_y + dy
+
+        # check X + Y zusammen (nicht getrennt!)
+        if not self.is_blocked(new_x, self.player.center_y):
+            self.player.center_x = new_x
+
+        if not self.is_blocked(self.player.center_x, new_y):
+            self.player.center_y = new_y
 
 
     def on_key_press(self, key, modifiers):
