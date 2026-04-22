@@ -141,12 +141,13 @@ class Game(arcade.Window):
         # =========================
         self.item_icons = {
             "small Mana potion": url + "assets/images/items/SmallManaPotion.png",
-            "small Health potion": url + "assets/images/items/SmallHealPotion.png"
+            "small Health potion": url + "assets/images/items/SmallHealPotion.png",
+            "Chug Chug": url + "assets/images/items/mix.png"
         }
 
         self.magic_icons = {
             "Fire Spell": url + "assets/images/level_up_symbols/Fire.png",
-            "Ice Spell": url + "assets/images/characters/gandalf.png",
+            "Ice Spell": url + "assets/images/level_up_symbols/Ice.png",
                             }
         self.level_icons = {
             "Hp": load_texture_from_url(url + "assets/images/level_up_symbols/heart.png"),
@@ -193,11 +194,12 @@ class Game(arcade.Window):
         # =========================
         self.menu = ["Punch", "Magic", "Item", "Escape"]
         self.selected = 0
-        self.menu_2 = ["small Mana potion", "small Health potion"]
+        self.menu_2 = ["small Mana potion", "small Health potion", "Chug Chug"]
         self.selected_2 = 0
         self.inventory = {
             "small Mana potion": 5,
             "small Health potion": 5,
+            "Chug Chug": 0,
         }
         self.menu_3 = ["Fire Spell", "Ice Spell"]
         self.selected_3 = 0
@@ -265,6 +267,10 @@ class Game(arcade.Window):
                 elif item == "small Mana potion":
                     self.bp = min(self.max_bp, self.bp + 20)
                     self.message = "+20 BP"
+                elif item == "Chug Chug":
+                    self.player_hp = self.max_hp
+                    self.bp = self.max_bp
+                    self.message = "everything fully restored"
 
                 #  reduzieren
                 self.inventory[item] -= 1
@@ -632,7 +638,7 @@ class Game(arcade.Window):
                     if not self.is_water(check_x, check_y):
                         return dist
 
-        return max_dist  # komplett tief drin
+        return max_dist
 
     def on_update(self, delta_time):
         if self.state != "explore":
