@@ -117,8 +117,8 @@ class Game(arcade.Window):
         # ITEM TEST
         # =========================
         self.item_icons = {
-            "small Mana potion": url + "assets/images/characters/Franz.png",
-            "small Health potion": url + "assets/images/characters/gandalf.png"
+            "small Mana potion": url + "assets/images/items/SmallManaPotion.png",
+            "small Health potion": url + "assets/images/items/SmallHealPotion.png"
         }
 
         self.magic_icons = {
@@ -225,11 +225,11 @@ class Game(arcade.Window):
             # ❗ prüfen ob vorhanden
             if self.inventory[item] > 0:
 
-                if item == "Health potion":
+                if item == "small Health potion":
                     self.player_hp = min(self.max_hp, self.player_hp + 20)
                     self.message = "+20 HP"
 
-                elif item == "Mana potion":
+                elif item == "small Mana potion":
                     self.bp = min(self.max_bp, self.bp + 20)
                     self.message = "+20 BP"
 
