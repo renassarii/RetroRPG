@@ -7,7 +7,7 @@ from PIL import Image
 WIDTH = 800
 HEIGHT = 450
 
-PLAYER_SPEED = 1.5
+PLAYER_SPEED = 2
 
 url = "https://raw.githubusercontent.com/renassarii/RetroRPG/main/"
 
@@ -109,6 +109,7 @@ class Game(arcade.Window):
 
         self.background1 = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
         self.gameover = load_texture_from_url(url + "assets/images/backgrounds/gameover.png")
+        self.level_up = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
 
 
 
@@ -147,6 +148,8 @@ class Game(arcade.Window):
         self.player_hp = 100
         self.enemy_hp = 100
         self.max_hp = 100
+        self.player_xp = 0
+        self.player_max_xp = 100
 
         self.bp = 20
         self.max_bp = 20
@@ -323,7 +326,11 @@ class Game(arcade.Window):
 
             return
 
-
+        if self.state == "level_up":
+            arcade.draw_texture_rect(
+                self.level_up,
+                arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height)
+                
         if self.state == "dialog":
             self.player_list.draw()
             self.enemy_list.draw()
@@ -595,10 +602,14 @@ class Game(arcade.Window):
 
 
                 if self.after_battle:
-                     self.enemy.kill()
-                     self.state = "explore"
-                     self.after_battle = False
-                     return
+                    if self.player_xp == self.player_max_xp:
+                        self.state = "level_up"
+                        return
+                    else:
+                        self.enemy.kill()
+                        self.state = "explore"
+                        self.after_battle = False
+                        return
                 self.story_step += 1
 
                 if self.story_step == 1:
