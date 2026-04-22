@@ -145,12 +145,12 @@ class Game(arcade.Window):
         }
 
         self.magic_icons = {
-            "Fire Spell": url + "assets/images/characters/Franz.png",
+            "Fire Spell": url + "assets/images/level_up_symbols/Fire.png",
             "Ice Spell": url + "assets/images/characters/gandalf.png",
                             }
         self.level_icons = {
-            "Hp": load_texture_from_url(url + "assets/images/items/SmallHealPotion.png"),
-            "Bp": load_texture_from_url(url + "assets/images/items/SmallManaPotion.png"),
+            "Hp": load_texture_from_url(url + "assets/images/level_up_symbols/heart.png"),
+            "Bp": load_texture_from_url(url + "assets/images/level_up_symbols/ManaSymbol.png"),
         }
 
 
@@ -159,8 +159,8 @@ class Game(arcade.Window):
         # =========================
         # SPRITES
         # =========================
-        self.player = arcade.Sprite(player_texture, 2)
-        self.enemy = arcade.Sprite(enemy_texture, 2)
+        self.player = arcade.Sprite(player_texture, 2.5)
+        self.enemy = arcade.Sprite(enemy_texture, 2.5)
 
         self.player_list = arcade.SpriteList()
         self.enemy_list = arcade.SpriteList()
@@ -492,7 +492,7 @@ class Game(arcade.Window):
             )
 
             arcade.draw_text(
-                "LEVEL UP! Wähle dein Upgrade",
+                "LEVEL UP! Pick your upgrade bitch",
                 self.width / 2,
                 380,
                 arcade.color.WHITE,
@@ -502,7 +502,7 @@ class Game(arcade.Window):
             options = self.menu_4
 
             for i, option in enumerate(options):
-                x = 700 + i * 300
+                x = 600 + i * 300
                 y = 200
 
                 # Box
@@ -537,7 +537,7 @@ class Game(arcade.Window):
                         30
                     )
                 arcade.draw_text(
-                    "Drücke SPACE um Upgrade zu wählen",
+                    "Press Space to confirm your choice",
                     self.width / 2,
                     330,
                     arcade.color.LIGHT_GRAY,
