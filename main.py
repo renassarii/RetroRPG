@@ -496,7 +496,8 @@ class Game(arcade.Window):
         r, g, b = self.map_pixels[img_x, img_y]
 
         # besserer Wasser-Check
-        return b > 140 and r < 80 and g < 120
+        return b > r and b > g
+
 
     def is_blocked(self, x, y):
         points = [
@@ -509,9 +510,22 @@ class Game(arcade.Window):
 
         for ox, oy in points:
             if self.is_water(x + ox, y + oy):
-                return True
+                return False
 
         return False
+
+    def water_depth(self, x, y, max_dist=60):
+        for dist in range(0, max_dist, 4):  # Schrittweite = Performance + Genauigkeit
+            for dx in range(-dist, dist + 1, 4):
+                for dy in range(-dist, dist + 1, 4):
+                    check_x = x + dx
+                    check_y = y + dy
+
+                    # sobald Land gefunden → Tiefe = Distanz
+                    if not self.is_water(check_x, check_y):
+                        return dist
+
+        return max_dist  # komplett tief drin
 
     def on_update(self, delta_time):
         if self.state != "explore":
@@ -522,20 +536,32 @@ class Game(arcade.Window):
             if self.message_timer <= 0:
                 self.message = ""
 
+        depth = self.water_depth(self.player.center_x, self.player.center_y)
+
+        speed = PLAYER_SPEED
+
+        if self.is_water(self.player.center_x, self.player.center_y):
+            speed = PLAYER_SPEED * 0.5  # langsamer im Wasser
+
         dx = 0
         dy = 0
 
         if arcade.key.W in self.keys_held:
-            dy += PLAYER_SPEED
+            dy += speed
         if arcade.key.S in self.keys_held:
-            dy -= PLAYER_SPEED
+            dy -= speed
         if arcade.key.A in self.keys_held:
-            dx -= PLAYER_SPEED
+            dx -= speed
         if arcade.key.D in self.keys_held:
-            dx += PLAYER_SPEED
+            dx += speed
 
         new_x = self.player.center_x + dx
         new_y = self.player.center_y + dy
+        depth_next = self.water_depth(new_x, new_y)
+
+        # 👉 zu tief → stoppen
+        if depth_next > 40:
+            return
 
         # check X + Y zusammen (nicht getrennt!)
         if not self.is_blocked(new_x, self.player.center_y):
@@ -543,6 +569,7 @@ class Game(arcade.Window):
 
         if not self.is_blocked(self.player.center_x, new_y):
             self.player.center_y = new_y
+
 
 
     def on_key_press(self, key, modifiers):
