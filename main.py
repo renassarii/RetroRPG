@@ -56,7 +56,6 @@ dialogues = {
             "You have Punch that's the most basic attack you just go up to him and smack him",
             "You can use Magic you just channel your Mana(Bp) and just release a spell you only have one right now",
             "You can get Items on this Island i will give you 5 Heal and Mana potions",
-            "You can Shield yourself mid round it won't give the turn to your enemy and you get less damage",
             "At last the pussy move is running away with Escape.",
             "Now fight me"
         ]
@@ -154,8 +153,8 @@ class Game(arcade.Window):
             "Nature Spell": url + "assets/images/level_up_symbols/heart.png",
                             }
         self.level_icons = {
-            "Hp": load_texture_from_url(url + "assets/images/level_up_symbols/heart.png"),
-            "Bp": load_texture_from_url(url + "assets/images/level_up_symbols/ManaSymbol.png"),
+            "Health points": load_texture_from_url(url + "assets/images/level_up_symbols/heart.png"),
+            "Mana": load_texture_from_url(url + "assets/images/level_up_symbols/ManaSymbol.png"),
         }
 
 
@@ -225,7 +224,7 @@ class Game(arcade.Window):
             "Copper":5,
             "Nature Spell":7,
         }
-        self.menu_4 = ["Hp", "Bp"]
+        self.menu_4 = ["Health points", "Mana"]
         self.selected_4 = 0
         self.message = ""
 
@@ -716,23 +715,30 @@ class Game(arcade.Window):
             )
 
             arcade.draw_text(
-                "LEVEL UP! Pick your upgrade bitch",
+                "LEVEL UP! Pick your upgrade",
                 self.width / 2,
                 380,
                 arcade.color.WHITE,
                 24,
                 anchor_x="center"
             )
-            options = self.menu_4
 
-            for i, option in enumerate(options):
+
+            for i, option in enumerate(self.menu_4):
                 x = 600 + i * 300
                 y = 200
 
-                # Box
+                if self.selected_4 == i:
+                    if option == "Health points":
+                        box_color = (150, 0, 24)  # carmin red
+                    else:
+                        box_color = (40, 60, 180)  # blau
+                else:
+                    box_color = arcade.color.BLACK
+
                 arcade.draw_rect_filled(
                     arcade.rect.XYWH(x, y, 200, 180),
-                    arcade.color.BLACK
+                    box_color
                 )
 
                 # Icon
@@ -741,7 +747,7 @@ class Game(arcade.Window):
                     arcade.rect.XYWH(x, y + 40, 80, 80)
                 )
 
-                # Text
+                # Text (immer weiß auf der Box)
                 arcade.draw_text(
                     option,
                     x,
@@ -760,14 +766,15 @@ class Game(arcade.Window):
                         arcade.color.RED,
                         30
                     )
-                arcade.draw_text(
-                    "Press Space to confirm your choice",
-                    self.width / 2,
-                    330,
-                    arcade.color.LIGHT_GRAY,
-                    14,
-                    anchor_x="center"
-                )
+
+            arcade.draw_text(
+                "Press Space to confirm your choice",
+                self.width / 2,
+                330,
+                arcade.color.LIGHT_GRAY,
+                14,
+                anchor_x="center"
+            )
             return
 
 
