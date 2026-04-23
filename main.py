@@ -525,7 +525,7 @@ class Game(arcade.Window):
             if self.menu[self.selected] == "Magic":
 
                 popup_x = 250
-                popup_y = 250
+                popup_y = 200
 
                 arcade.draw_rect_filled(
                     arcade.rect.XYWH(popup_x, popup_y, 300, 250),
@@ -759,7 +759,7 @@ class Game(arcade.Window):
                     elif 0.6 <= self.enemy_luck <= 0.8:
                         self.enemy_defense = True
                     elif self.enemy_luck >= 0.8:
-                        self.enemy_hp += 10
+                        self.enemy_hp += 5
                         self.message = "Damn this bitch healed himself"
                     self.enemy_turn = False
                     self.player_turn = True
