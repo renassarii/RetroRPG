@@ -872,19 +872,19 @@ class Game(arcade.Window):
             if self.enemy_timer <= 0:
                 if self.player_debuff_spell:
                     self.enemy_luck = random.random()
-                    if self.enemy_luck <= 0.2:
+                    if self.enemy_luck <= 0.1:
                         damage = int(20 * random.random())
                         self.player_hp -= damage
                         self.message = f"Crit damage {damage}"
                         self.player_debuff_spell = False
-                    elif 0.2 <= self.enemy_luck <= 0.6:
+                    elif 0.1 < self.enemy_luck <= 0.6:
                         damage = int(10 * random.random())
                         self.player_hp -= int(10 * random.random())
                         self.message = f"{damage}"
                         self.player_debuff_spell = False
-                    elif 0.6 <= self.enemy_luck <= 0.8:
+                    elif 0.6 < self.enemy_luck <= 0.9:
                         self.enemy_defense = True
-                    elif self.enemy_luck >= 0.8:
+                    elif self.enemy_luck > 0.9:
                         self.enemy_hp += 5
                         self.message = "Damn this bitch healed himself"
                     self.enemy_turn = False
