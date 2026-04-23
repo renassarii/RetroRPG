@@ -243,6 +243,8 @@ class Game(arcade.Window):
         for magic, magic_url in self.magic_icons.items():
             self.magic_textures[magic] = load_texture_from_url(magic_url)
         self.keys_held = set()
+        # post-battle XP popup
+        self.post_battle_xp = None
 
     def do_action(self):
         action = self.menu[self.selected]
@@ -262,7 +264,6 @@ class Game(arcade.Window):
                     self.enemy_hp -= (damage * 2)
                     self.message = "you did -28 damage"
                     action_done = True
-                    self.player_defense = False
                     self.player_buff_spell = False
 
             else:
@@ -383,12 +384,11 @@ class Game(arcade.Window):
                 self.message = "Ran away!"
                 action_done = True
 
-
         if self.enemy_hp <= 0:
             self.after_battle = True
-            self.player_xp += 100
-
+            self.player_xp += 50
             if self.player_xp >= self.player_max_xp:
+                # sofort Level-Up: Wechsel zur Level-Choice
                 self.player_xp -= self.player_max_xp
                 self.level += 1
                 self.player_max_xp += 50
@@ -397,9 +397,11 @@ class Game(arcade.Window):
                 self.selected_4 = 0
                 return
             else:
-                self.state = "dialog"
-                self.current_dialog_id = 9
-                self.dialog_index = 0
+                # Berechne wie viel XP noch bis zum nächsten Level fehlt
+                xp_to_next = max(0, self.player_max_xp - self.player_xp)
+                self.post_battle_xp = xp_to_next
+                # Zeige einen kurzen Post-Battle-Popup an
+                self.state = "post_battle"
                 return
 
 
@@ -441,6 +443,43 @@ class Game(arcade.Window):
             self.background1,
             arcade.rect.XYWH(self.width // 2, self.height // 2, self.width, self.height)
         )
+
+        # Post-battle XP popup (zeigt kurz, wie viel XP bis zum nächsten Level fehlt)
+        if self.state == "post_battle":
+            # Zeichne Szene im Hintergrund
+            self.player_list.draw()
+            self.enemy_list.draw()
+
+            # Popup-Box
+            popup_w = 420
+            popup_h = 120
+            popup_x = self.width // 2
+            popup_y = 450
+
+            arcade.draw_rect_filled(
+                arcade.rect.XYWH(popup_x, popup_y, popup_w, popup_h),
+                arcade.color.DARK_OLIVE_GREEN
+            )
+
+            arcade.draw_text(
+                f"Noch {self.post_battle_xp} XP bis zum nächsten Level",
+                popup_x,
+                popup_y + 20,
+                arcade.color.WHITE,
+                18,
+                anchor_x="center"
+            )
+
+            arcade.draw_text(
+                "Press Space to continue",
+                popup_x,
+                popup_y - 30,
+                arcade.color.LIGHT_GRAY,
+                12,
+                anchor_x="center"
+            )
+
+            return
 
         arcade.draw_texture_rect(
             self.background1,
@@ -982,8 +1021,17 @@ class Game(arcade.Window):
                     self.max_bp += 20
                     self.bp += 20
 
+                # Nach dem Upgrade dem Spieler sagen, wie viel XP bis zum nächsten Level fehlt
+                xp_to_next = max(0, self.player_max_xp - self.player_xp)
+                dialogues[99] = {
+                    "name": "System",
+                    "lines": [
+                        f"Noch {xp_to_next} XP bis zum nächsten Level"
+                    ]
+                }
+
                 self.state = "dialog"
-                self.current_dialog_id = 11
+                self.current_dialog_id = 99
                 self.dialog_index = 0
 
         # enter dialogue
@@ -1067,6 +1115,8 @@ class Game(arcade.Window):
                 self.enemy_timer = 0.5
                 return
 
+        
+
             elif self.menu[self.selected] == "Item":
                 if key == arcade.key.UP:
 
@@ -1121,6 +1171,29 @@ class Game(arcade.Window):
                         if self.selected_3 >= self.magic_scroll + self.visible_magic:
                             self.magic_scroll = self.selected_3 - self.visible_magic + 1
                     return
+        # Post-battle popup bestätigen
+        if self.state == "post_battle" and key == arcade.key.SPACE:
+            # Wenn der Spieler durch die erhaltenen XP ein Level erreicht hätte,
+            # wird dies hier behandelt (ansonsten zurück zur Erkundung).
+            if self.player_xp >= self.player_max_xp:
+                # Level-Up: gehe in level_choice
+                self.player_xp = 0
+                self.player_max_xp += 50
+                self.level += 1
+                self.state = "level_choice"
+                self.selected_4 = 0
+                self.post_battle_xp = None
+                return
+            else:
+                # Kein Level-Up: Gegner entfernen und zurück zur Erkundung
+                try:
+                    self.enemy.kill()
+                except Exception:
+                    pass
+                self.state = "explore"
+                self.after_battle = False
+                self.post_battle_xp = None
+                return
     def on_key_release(self, key, modifiers):
         if key in self.keys_held:
             self.keys_held.remove(key)
