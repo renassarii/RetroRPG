@@ -150,7 +150,8 @@ class Game(arcade.Window):
             "Fire Spell": url + "assets/images/level_up_symbols/Fire.png",
             "Ice Spell": url + "assets/images/level_up_symbols/Ice.png",
             "Rakukaja": url + "assets/images/level_up_symbols/Fire.png",
-            "Copper": url + "assets/images/level_up_symbols/Ice.png",
+            "Copper": url + "assets/images/level_up_symbols/copper.png",
+            "Nature Spell": url + "assets/images/level_up_symbols/heart.png",
                             }
         self.level_icons = {
             "Hp": load_texture_from_url(url + "assets/images/level_up_symbols/heart.png"),
@@ -191,6 +192,12 @@ class Game(arcade.Window):
         self.bp = 20
         self.max_bp = 20
 
+        self.magic_scroll = 0
+        self.visible_magic = 3
+
+        self.item_scroll = 0
+        self.visible_item = 3
+
         self.set_spawn_points()
 
         # dialog control
@@ -209,13 +216,14 @@ class Game(arcade.Window):
             "small Health potion": 5,
             "Chug Chug": 1,
         }
-        self.menu_3 = ["Fire Spell", "Ice Spell", "Rakukaja", "Copper"]
+        self.menu_3 = ["Fire Spell", "Ice Spell", "Rakukaja", "Copper", "Nature Spell"]
         self.selected_3 = 0
         self.usage = {
             "Fire Spell":3,
             "Ice Spell":6,
             "Rakukaja":4,
             "Copper":5,
+            "Nature Spell":7,
         }
         self.menu_4 = ["Hp", "Bp"]
         self.selected_4 = 0
@@ -331,6 +339,14 @@ class Game(arcade.Window):
                 if self.bp >= 4:
                     self.player_debuff_spell = True
                     self.bp -= 4
+                else:
+                    self.message = "you don't have enough BP"
+
+            if magic == "Nature Spell":
+                if self.bp >= 7:
+                    self.player_hp = min(self.max_hp, self.player_hp + 40)
+                    self.bp -= 7
+                    self.message = "you healed yourself"
                 else:
                     self.message = "you don't have enough BP"
 
@@ -520,32 +536,92 @@ class Game(arcade.Window):
                 color = arcade.color.YELLOW if i == self.selected else arcade.color.WHITE
                 arcade.draw_text(magic, x + i * 150, 70, color, 18)
 
-            arcade.draw_text(self.message, 250, 20, arcade.color.WHITE, 14)
+            action = self.menu[self.selected]
+
+            color_map = {
+                "Magic": arcade.color.VIOLET,
+                "Item": arcade.color.GREEN,
+                "Punch": arcade.color.WHITE,
+                "Escape": arcade.color.RED
+            }
+
+            msg_color = color_map.get(action, arcade.color.WHITE)
 
             if self.menu[self.selected] == "Magic":
 
                 popup_x = 250
                 popup_y = 200
+                popup_width = 200
+                popup_height = 160
 
                 arcade.draw_rect_filled(
-                    arcade.rect.XYWH(popup_x, popup_y, 300, 250),
+                    arcade.rect.XYWH(popup_x, popup_y, popup_width, popup_height),
                     arcade.color.BLACK
                 )
 
-                for i, magic in enumerate(self.menu_3):
-                    y = popup_y + 40 - i * 60
+                start = self.magic_scroll
+                end = start + self.visible_magic
 
+                for i, magic in enumerate(self.menu_3[start:end]):
+                    real_index = start + i
+                    y = popup_y + 70 - i * 45
+
+                    is_selected = (real_index == self.selected_3)
+
+                    if is_selected:
+                        arcade.draw_rect_filled(
+                            arcade.rect.XYWH(popup_x, y, popup_width, 40),
+                            (160, 80, 255, 180)
+                        )
+
+                        # glow effekt (etwas heller/lila)
+                        arcade.draw_rect_filled(
+                            arcade.rect.XYWH(popup_x, y, 220, 40),
+                            (190, 120, 255, 140)
+                        )
+
+                    # ICON
                     texture = self.magic_textures[magic]
+                    arcade.draw_texture_rect(
+                        texture,
+                        arcade.rect.XYWH(popup_x - 80, y, 30, 30)
+                    )
 
-                    arcade.draw_texture_rect(texture, arcade.rect.XYWH(popup_x - 80, y, 40, 40))
+                    # TEXT
+                    color = arcade.color.WHITE if is_selected else arcade.color.LIGHT_GRAY
+                    arcade.draw_text(
+                        magic,
+                        popup_x - 40,
+                        y - 8,
+                        color,
+                        12
+                    )
 
-                    color = arcade.color.YELLOW if i == self.selected_3 else arcade.color.WHITE
+                    # COST rechts
+                    arcade.draw_text(
+                        f"-{self.usage[magic]} BP",
+                        popup_x + 60,
+                        y - 8,
+                        arcade.color.WHITE if is_selected else arcade.color.GRAY,
+                        12
+                    )
 
-                    arcade.draw_text(f"{magic} -{self.usage[magic]} BP", popup_x - 20, y - 10, color, 14)
+                    # CURSOR
+                    if is_selected:
+                        arcade.draw_text(
+                            "▶",
+                            popup_x - 110,
+                            y - 10,
+                            arcade.color.BLACK,
+                            18
+                        )
 
-                    # 👉 SELECTION INDICATOR
-                    if i == self.selected_3:
-                        arcade.draw_text("▶", popup_x - 50, y - 15, arcade.color.RED, 18)
+                if self.magic_scroll > 0:
+                    arcade.draw_text("↑", popup_x + 70, popup_y + 80, arcade.color.WHITE, 16)
+
+                if self.magic_scroll + self.visible_magic < len(self.menu_3):
+                    arcade.draw_text("↓", popup_x + 70, popup_y - 60, arcade.color.WHITE, 16)
+
             arcade.draw_text(f"Level: {self.level}", 20, 430, arcade.color.WHITE, 14)
 
             for i, item in enumerate(self.menu):
@@ -556,32 +632,82 @@ class Game(arcade.Window):
 
             if self.menu[self.selected] == "Item":
 
-                popup_x = 450
-                popup_y = 230
+                popup_x = 250
+                popup_y = 200
+                popup_width = 200
+                popup_height = 160
 
                 arcade.draw_rect_filled(
-                    arcade.rect.XYWH(popup_x, popup_y, 300, 230),
+                    arcade.rect.XYWH(popup_x, popup_y, popup_width, popup_height),
                     arcade.color.BLACK
                 )
 
-                for i, item in enumerate(self.menu_2):
-                    y = popup_y + 100 - i * 60
+                start = self.item_scroll
+                end = start + self.visible_item
+
+                for i, item in enumerate(self.menu_2[start:end]):
+
+                    real_index = start + i
+                    y = popup_y + 70 - i * 45
+
+                    is_selected = (real_index == self.selected_2)
+
+                    if is_selected:
+                        arcade.draw_rect_filled(
+                            arcade.rect.XYWH(popup_x, y, popup_width, 40),
+                            (255, 220, 0, 180)
+                        )
+
+                        arcade.draw_rect_filled(
+                            arcade.rect.XYWH(popup_x, y, 220, 40),
+                            (255, 220, 0, 180)
+                        )
 
                     texture = self.item_textures[item]
 
-                    arcade.draw_texture_rect(texture, arcade.rect.XYWH(popup_x - 80, y, 40, 40))
+                    arcade.draw_texture_rect(
+                        texture,
+                        arcade.rect.XYWH(popup_x - 80, y, 30, 30)
+                    )
 
-                    if self.inventory[self.menu_2[self.selected_2]] == 0:
-                        # Aktion blocken
-                        return
-                    else:
-                        color = arcade.color.YELLOW if i == self.selected_2 else arcade.color.WHITE
+                    color = arcade.color.BLACK if is_selected else arcade.color.WHITE
+
                     count = self.inventory[item]
-                    arcade.draw_text(f"{count}x {item} ", popup_x - 20, y - 10, color, 14)
 
-                    if i == self.selected_2:
-                        arcade.draw_text("▶", popup_x - 50, y - 15, arcade.color.RED, 18)
-            return
+                    arcade.draw_text(
+                        f"{count}x {item}",
+                        popup_x - 50,
+                        y - 8,
+                        color,
+                        12
+                    )
+
+                    if is_selected:
+                        arcade.draw_text(
+                            "▶",
+                            popup_x - 110,
+                            y - 10,
+                            arcade.color.BLACK,
+                            18
+                        )
+
+                # =========================
+                # SCROLL ARROWS (IDENTISCH MAGIC)
+                # =========================
+
+                if self.item_scroll > 0:
+                    arcade.draw_text("↑", popup_x + 70, popup_y + 80, arcade.color.WHITE, 16)
+
+                if self.item_scroll + self.visible_item < len(self.menu_2):
+                    arcade.draw_text("↓", popup_x + 70, popup_y - 60, arcade.color.WHITE, 16)
+
+                arcade.draw_text(f"Level: {self.level}", 20, 430, arcade.color.WHITE, 14)
+
+                for i, item in enumerate(self.menu):
+                    color = arcade.color.YELLOW if i == self.selected else arcade.color.WHITE
+                    arcade.draw_text(item, x + i * 150, 70, color, 18)
+
+                arcade.draw_text(self.message, 250, 20, arcade.color.WHITE, 14)
 
         if self.state == "level_choice":
             arcade.draw_texture_rect(
@@ -774,7 +900,7 @@ class Game(arcade.Window):
                     elif 0.6 <= self.enemy_luck <= 0.8:
                         self.enemy_defense = True
                     elif self.enemy_luck >= 0.8:
-                        heal = int(random.random() * 20)
+                        heal = 5
                         self.enemy_hp += heal
                         self.message = f"Damn this bitch healed himself for {heal} hp"
                     self.enemy_turn = False
@@ -936,22 +1062,58 @@ class Game(arcade.Window):
 
             elif self.menu[self.selected] == "Item":
                 if key == arcade.key.UP:
-                    self.selected_2 = (self.selected_2 - 1) % len(self.menu_2)
+
+                    if self.selected_2 > 0:
+
+                        self.selected_2 -= 1
+
+                        # scroll nach oben fixen
+
+                        if self.selected_2 < self.item_scroll:
+                            self.item_scroll = self.selected_2
+
                     return
 
                 if key == arcade.key.DOWN:
-                    self.selected_2 = (self.selected_2 + 1) % len(self.menu_2)
+
+                    if self.selected_2 < len(self.menu_2) - 1:
+
+                        self.selected_2 += 1
+
+                        # scroll nach unten fixen
+
+                        if self.selected_2 >= self.item_scroll + self.visible_item:
+                            self.item_scroll = self.selected_2 - self.visible_item + 1
                     return
+
+
 
             elif self.menu[self.selected] == "Magic":
+
                 if key == arcade.key.UP:
-                    self.selected_3 = (self.selected_3 - 1) % len(self.menu_3)
+
+                    if self.selected_3 > 0:
+
+                        self.selected_3 -= 1
+
+                        # scroll nach oben fixen
+
+                        if self.selected_3 < self.magic_scroll:
+                            self.magic_scroll = self.selected_3
+
                     return
 
                 if key == arcade.key.DOWN:
-                    self.selected_3 = (self.selected_3 + 1) % len(self.menu_3)
-                    return
 
+                    if self.selected_3 < len(self.menu_3) - 1:
+
+                        self.selected_3 += 1
+
+                        # scroll nach unten fixen
+
+                        if self.selected_3 >= self.magic_scroll + self.visible_magic:
+                            self.magic_scroll = self.selected_3 - self.visible_magic + 1
+                    return
     def on_key_release(self, key, modifiers):
         if key in self.keys_held:
             self.keys_held.remove(key)
