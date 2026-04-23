@@ -149,6 +149,8 @@ class Game(arcade.Window):
         self.magic_icons = {
             "Fire Spell": url + "assets/images/level_up_symbols/Fire.png",
             "Ice Spell": url + "assets/images/level_up_symbols/Ice.png",
+            "Rakukaja": url + "assets/images/level_up_symbols/Fire.png",
+            "Copper": url + "assets/images/level_up_symbols/Ice.png",
                             }
         self.level_icons = {
             "Hp": load_texture_from_url(url + "assets/images/level_up_symbols/heart.png"),
@@ -175,7 +177,8 @@ class Game(arcade.Window):
         # HP
         # =========================
         self.player_hp = 100
-        self.player_defense = False
+        self.player_debuff_spell = False
+        self.player_buff_spell = False
         self.enemy_hp = 100
         self.enemy_max_hp = 100
         self.enemy_luck = 0
@@ -197,7 +200,7 @@ class Game(arcade.Window):
         # =========================
         # MENU
         # =========================
-        self.menu = ["Punch", "Magic", "Item","Shield", "Escape"]
+        self.menu = ["Punch", "Magic", "Item", "Escape"]
         self.selected = 0
         self.menu_2 = ["small Mana potion", "small Health potion", "Chug Chug"]
         self.selected_2 = 0
@@ -206,11 +209,13 @@ class Game(arcade.Window):
             "small Health potion": 5,
             "Chug Chug": 1,
         }
-        self.menu_3 = ["Fire Spell", "Ice Spell"]
+        self.menu_3 = ["Fire Spell", "Ice Spell", "Rakukaja", "Copper"]
         self.selected_3 = 0
         self.usage = {
             "Fire Spell":3,
             "Ice Spell":6,
+            "Rakukaja":4,
+            "Copper":5,
         }
         self.menu_4 = ["Hp", "Bp"]
         self.selected_4 = 0
@@ -238,17 +243,32 @@ class Game(arcade.Window):
 
         if action == "Punch":
             damage = 14
-            if self.enemy_defense:
-                shield_damage = int(damage * random.random())
-                self.enemy_hp -= shield_damage
-                self.message = f"he shielded himself {shield_damage} damage"
-                action_done = True
-                self.enemy_defense = False
-            else:
-                self.enemy_hp -= damage
-                self.message = "you did -14 damage"
-                action_done = True
+            if self.player_buff_spell:
+                if self.enemy_defense:
+                    shield_damage = int((damage * random.random()) * 2)
+                    self.enemy_hp -= shield_damage
+                    self.message = f"he shielded himself {shield_damage} damage"
+                    action_done = True
+                    self.enemy_defense = False
+                    self.player_buff_spell = False
+                else:
+                    self.enemy_hp -= (damage * 2)
+                    self.message = "you did -28 damage"
+                    action_done = True
+                    self.player_defense = False
+                    self.player_buff_spell = False
 
+            else:
+                if self.enemy_defense:
+                    shield_damage = int(damage * random.random())
+                    self.enemy_hp -= shield_damage
+                    self.message = f"he shielded himself {shield_damage} damage"
+                    action_done = True
+                    self.enemy_defense = False
+                else:
+                    self.enemy_hp -= damage
+                    self.message = "you did -14 damage"
+                    action_done = True
         elif action == "Magic":
             magic = self.menu_3[self.selected_3]
 
@@ -256,16 +276,30 @@ class Game(arcade.Window):
                 if self.bp >= 3:
                     damage = 10
                     self.bp -= 3
-                    if self.enemy_defense:
-                        shield_damage = int(damage * random.random())
-                        self.enemy_hp -= shield_damage
-                        self.message = f"he shielded himself {shield_damage} damage"
-                        action_done  = True
-                        self.enemy_defense = False
+                    if self.player_buff_spell:
+                        if self.enemy_defense:
+                            shield_damage = int((damage * random.random())* 2)
+                            self.enemy_hp -= shield_damage
+                            self.message = f"he shielded himself {shield_damage} damage"
+                            action_done  = True
+                            self.enemy_defense = False
+                            self.player_buff_spell = False
+                        else:
+                            self.enemy_hp -= (damage * 2)
+                            self.message = "-20 damage"
+                            action_done = True
+                            self.player_buff_spell = False
                     else:
-                        self.enemy_hp -= damage
-                        self.message = "-10 damage"
-                        action_done = True
+                        if self.enemy_defense:
+                            shield_damage = int(damage * random.random())
+                            self.enemy_hp -= shield_damage
+                            self.message = f"he shielded himself {shield_damage} damage"
+                            action_done  = True
+                            self.enemy_defense = False
+                        else:
+                            self.enemy_hp -= damage
+                            self.message = "-20 damage"
+                            action_done = True
                 else:
                     self.message = "you don't have enough BP"
 
@@ -284,6 +318,19 @@ class Game(arcade.Window):
                         self.enemy_hp -= damage
                         self.message = "-20 damage"
                         action_done = True
+                else:
+                    self.message = "you don't have enough BP"
+            if magic == "Copper":
+                if self.bp >= 5:
+                    self.player_buff_spell = True
+                    self.bp -= 5
+                else:
+                    self.message = "you don't have enough BP"
+
+            if magic == "Rakukaja":
+                if self.bp >= 4:
+                    self.player_debuff_spell = True
+                    self.bp -= 4
                 else:
                     self.message = "you don't have enough BP"
 
@@ -315,10 +362,10 @@ class Game(arcade.Window):
                 self.message = "No potions left"
 
         elif action == "Shield":
-            if self.player_defense:
+            if self.player_debuff_spell:
                 self.message = "You are shielded already"
             else:
-                self.player_defense = True
+                self.player_debuff_spell = True
                 self.message = "You shield yourself for the next turn"
                 action_done = True
 
@@ -478,10 +525,10 @@ class Game(arcade.Window):
             if self.menu[self.selected] == "Magic":
 
                 popup_x = 250
-                popup_y = 200
+                popup_y = 250
 
                 arcade.draw_rect_filled(
-                    arcade.rect.XYWH(popup_x, popup_y, 300, 160),
+                    arcade.rect.XYWH(popup_x, popup_y, 300, 250),
                     arcade.color.BLACK
                 )
 
@@ -697,22 +744,22 @@ class Game(arcade.Window):
             self.enemy_timer -= delta_time
 
             if self.enemy_timer <= 0:
-                if self.player_defense:
+                if self.player_debuff_spell:
                     self.enemy_luck = random.random()
                     if self.enemy_luck <= 0.2:
                         damage = int(20 * random.random())
                         self.player_hp -= damage
-                        self.message = f"Crit damage but your Shield was up {damage}"
-                        self.player_defense = False
+                        self.message = f"Crit damage {damage}"
+                        self.player_debuff_spell = False
                     elif 0.2 <= self.enemy_luck <= 0.6:
                         damage = int(10 * random.random())
                         self.player_hp -= int(10 * random.random())
-                        self.message = f"your Shield was up {damage}"
-                        self.player_defense = False
+                        self.message = f"{damage}"
+                        self.player_debuff_spell = False
                     elif 0.6 <= self.enemy_luck <= 0.8:
                         self.enemy_defense = True
                     elif self.enemy_luck >= 0.8:
-                        self.enemy_hp += 20
+                        self.enemy_hp += 10
                         self.message = "Damn this bitch healed himself"
                     self.enemy_turn = False
                     self.player_turn = True
