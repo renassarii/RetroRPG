@@ -441,8 +441,10 @@ class Game(arcade.Window):
     def start_battle_positions(self):
         self.player.center_x = 200
         self.player.center_y = 320
-        self.enemy.center_x = 600
-        self.enemy.center_y = 320
+        # Set player pos always; enemy may be None until assigned, check first
+        if self.enemy is not None:
+            self.enemy.center_x = 600
+            self.enemy.center_y = 320
 
     # =========================
     # DRAW
@@ -511,15 +513,14 @@ class Game(arcade.Window):
         if self.state == "explore":
             self.player_list.draw()
             self.enemy_list.draw()
-
-            if self.enemy:  # falls später mehrere Gegner / gelöscht
-                dist = arcade.get_distance_between_sprites(self.player, self.enemy)
-
+            # Zeichne das "E"-Interaktionszeichen über jedem Gegner, der nahe genug ist
+            for enemy in self.enemy_list:
+                dist = arcade.get_distance_between_sprites(self.player, enemy)
                 if dist < 80:
                     # Kreis
                     arcade.draw_circle_filled(
-                        self.enemy.center_x + 20,
-                        self.enemy.center_y + 60,
+                        enemy.center_x + 20,
+                        enemy.center_y + 60,
                         9,
                         arcade.color.BLACK
                     )
@@ -527,8 +528,8 @@ class Game(arcade.Window):
                     # "E" Text
                     arcade.draw_text(
                         "E",
-                        self.enemy.center_x + 20,
-                        self.enemy.center_y + 55,
+                        enemy.center_x + 20,
+                        enemy.center_y + 55,
                         arcade.color.WHITE,
                         10,
                         anchor_x="center"
@@ -570,15 +571,33 @@ class Game(arcade.Window):
         # BATTLE MODE
         # =========================
         if self.state == "battle":
+            # Zeichne nur den Spieler und den aktuell gesetzten Gegner (nicht alle Gegner)
             self.player_list.draw()
-            self.enemy_list.draw()
+            if self.enemy is not None:
+                # Einige arcade-Versionen haben keine Sprite.draw() Methode.
+                # Zeichne das einzelne Sprite über eine temporäre SpriteList.
+                tmp = arcade.SpriteList()
+                tmp.append(self.enemy)
+                tmp.draw()
+            else:
+                # Fallback: falls kein current enemy gesetzt, zeichne alle
+                self.enemy_list.draw()
 
             self.draw_hp_bar(200, 410, self.player_hp,self.max_hp, arcade.color.GREEN)
             self.draw_hp_bar(600, 410, self.enemy_hp,self.enemy_max_hp, arcade.color.RED)
             self.draw_bp_bar(200, 395, self.bp, arcade.color.CYAN)
 
             arcade.draw_text("Gypsy Luka", 170, 430, arcade.color.WHITE, 14)
-            arcade.draw_text("Köpek Franz", 570, 430, arcade.color.WHITE, 14)
+            # Zeige den Namen des aktuellen Gegners (falls gesetzt).
+            enemy_name = self.current_enemy or ""
+            arcade.draw_text(f"{enemy_name}", 540, 430, arcade.color.WHITE, 14)
+
+            # Zeichne das Level-UI-Hintergrundbild nur im unteren UI-Bereich
+            # statt fullscreen, damit die Sprites im Vordergrund sichtbar bleiben.
+            arcade.draw_texture_rect(
+                self.level_ui_bg,
+                arcade.rect.XYWH(self.width // 2, 80, self.width, 160)
+            )
 
             arcade.draw_rect_filled(
                 arcade.rect.XYWH(400, 80, 4000, 140),
@@ -886,6 +905,13 @@ class Game(arcade.Window):
         self.enemy_list.append(enemy)
         return enemy
 
+    def get_enemy_sprite(self, name):
+        """Return the enemy sprite with given name from enemy_list or None."""
+        for e in self.enemy_list:
+            if getattr(e, "name", None) == name:
+                return e
+        return None
+
     def draw_bp_bar(self, x, y, bp, color):
         width = 160
         height = 12
@@ -1082,9 +1108,26 @@ class Game(arcade.Window):
                     self.enemy_hp = enemy_data["hp"]
                     self.enemy_max_hp = enemy_data["hp"]
 
-                    self.state = "dialog"
-                    self.dialog_index = 0
-                    self.current_dialog_id = 1
+                    # Wenn der Gegner "Köpek Franz" ist, zeige die Erklärungs-Dialogsequenz.
+                    # Bei allen anderen Gegnern direkt in den Kampf starten.
+                    if self.current_enemy == "Köpek Franz":
+                        self.state = "dialog"
+                        self.dialog_index = 0
+                        self.current_dialog_id = 1
+                    else:
+                        # Sofort Kampf starten
+                        self.state = "battle"
+                        self.start_battle_positions()
+                        # current_enemy bereits gesetzt oben
+                        if random.random() < 0.5:
+                            self.player_turn = True
+                            self.enemy_turn = False
+                            self.message = "You start!"
+                        else:
+                            self.player_turn = False
+                            self.enemy_turn = True
+                            self.enemy_timer = 0.5
+                            self.message = "Enemy starts!"
                     break
 
 
@@ -1129,14 +1172,17 @@ class Game(arcade.Window):
                 elif self.story_step == 7:
                     self.current_dialog_id = 8
                 else:
-                    self.state = "battle"
-                    self.start_battle_positions()
-                    # Gegner setzen
+                    # Gegner setzen (aktuellen Enemy-Sprite finden und verwenden)
                     self.current_enemy = "Köpek Franz"  # später random möglich
+                    self.enemy = self.get_enemy_sprite(self.current_enemy)
 
                     enemy_data = self.ENEMY[self.current_enemy]
                     self.enemy_hp = enemy_data["hp"]
                     self.enemy_max_hp = enemy_data["hp"]
+
+                    # Positioniere Spieler und Gegner
+                    self.state = "battle"
+                    self.start_battle_positions()
 
                     if random.random() < 0.5:
                         self.player_turn = True
