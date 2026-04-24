@@ -104,7 +104,8 @@ dialogues = {
 
 def load_texture_from_url(url):
     response = requests.get(url)
-    img = Image.open(BytesIO(response.content))
+    image_data = BytesIO(response.content)
+    img = Image.open(image_data).convert("RGBA")
     return arcade.Texture(name=url, image=img)
 
 
@@ -125,8 +126,6 @@ class Game(arcade.Window):
         # LOADING PICS
         # =========================
         player_texture = load_texture_from_url(url + "assets/images/characters/gandalf.png")
-        enemy_texture = load_texture_from_url(url + "assets/images/characters/Franz.png")
-
         self.background1 = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
         self.gameover = load_texture_from_url(url + "assets/images/backgrounds/gameover.png")
         self.level_ui_bg = load_texture_from_url(url + "assets/images/backgrounds/hintergrund.png")
@@ -158,10 +157,19 @@ class Game(arcade.Window):
         }
         self.ENEMY ={
             "Köpek Franz" :{ "xp" : 15,"hp": 100},
-            "Altunyarrak": {"xp" : 20,"hp": 100},
+            "Altunyarrak": {"xp" : 20,"hp": 150},
         }
 
-        self.current_enemy ="Köpek Franz"
+        self.ENEMY_TEXTURES = {
+            "Köpek Franz": load_texture_from_url(
+                url + "assets/images/characters/Franz.png"
+            ),
+            "Altunyarrak": load_texture_from_url(
+                url + "assets/images/characters/Franz.png"
+            ),
+        }
+
+        self.enemy1 ="Köpek Franz"
 
 
 
@@ -171,13 +179,16 @@ class Game(arcade.Window):
         # SPRITES
         # =========================
         self.player = arcade.Sprite(player_texture, 2.5)
-        self.enemy = arcade.Sprite(enemy_texture, 2.5)
+
 
         self.player_list = arcade.SpriteList()
         self.enemy_list = arcade.SpriteList()
-        self.player_list.append(self.player)
-        self.enemy_list.append(self.enemy)
+        enemy1 = self.spawn_enemy("Köpek Franz", 500, 200)
+        enemy2 = self.spawn_enemy("Altunyarrak", 400, 300)
 
+
+
+        self.player_list.append(self.player)
         self.message_timer = 0
 
         # =========================
@@ -424,8 +435,7 @@ class Game(arcade.Window):
     def set_spawn_points(self):
         self.player.center_x = 200
         self.player.center_y = 320
-        self.enemy.center_x = 600
-        self.enemy.center_y = 320
+
 
     def start_battle_positions(self):
         self.player.center_x = 200
@@ -864,6 +874,17 @@ class Game(arcade.Window):
         self.map_img = img.resize((screen_w, screen_h))
         self.map_pixels = self.map_img.load()
 
+    def spawn_enemy(self, name, x, y):
+        enemy = arcade.Sprite()
+        enemy.texture = self.ENEMY_TEXTURES[name]
+        enemy.scale = 2.5
+        enemy.center_x = x
+        enemy.center_y = y
+        enemy.name = name
+
+        self.enemy_list.append(enemy)
+        return enemy
+
     def draw_bp_bar(self, x, y, bp, color):
         width = 160
         height = 12
@@ -1024,11 +1045,11 @@ class Game(arcade.Window):
 
                 choice = self.menu_4[self.selected_4]
 
-                if choice == "Hp":
+                if choice == "Health points":
                     self.max_hp += 20
                     self.player_hp += 20
 
-                elif choice == "Bp":
+                elif choice == "Mana":
                     self.max_bp += 20
                     self.bp += 20
 
@@ -1047,12 +1068,23 @@ class Game(arcade.Window):
 
         # enter dialogue
         if self.state == "explore" and key == arcade.key.E:
-            dist = arcade.get_distance_between_sprites(self.player, self.enemy)
 
-            if dist < 80:
-                self.state = "dialog"
-                self.dialog_index = 0
-                self.current_dialog_id = 1
+            for enemy in self.enemy_list:
+                dist = arcade.get_distance_between_sprites(self.player, enemy)
+
+                if dist < 80:
+                    self.enemy = enemy  # 🔥 aktueller Gegner
+
+                    self.current_enemy = enemy.name
+
+                    enemy_data = self.ENEMY[self.current_enemy]
+                    self.enemy_hp = enemy_data["hp"]
+                    self.enemy_max_hp = enemy_data["hp"]
+
+                    self.state = "dialog"
+                    self.dialog_index = 0
+                    self.current_dialog_id = 1
+                    break
 
 
 
@@ -1188,6 +1220,8 @@ class Game(arcade.Window):
                         if self.selected_3 >= self.magic_scroll + self.visible_magic:
                             self.magic_scroll = self.selected_3 - self.visible_magic + 1
                     return
+
+
         # Post-battle popup bestätigen
         if self.state == "post_battle" and key == arcade.key.SPACE:
             # Wenn der Spieler durch die erhaltenen XP ein Level erreicht hätte,
