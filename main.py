@@ -906,7 +906,6 @@ class Game(arcade.Window):
         return enemy
 
     def get_enemy_sprite(self, name):
-        """Return the enemy sprite with given name from enemy_list or None."""
         for e in self.enemy_list:
             if getattr(e, "name", None) == name:
                 return e
@@ -1108,8 +1107,7 @@ class Game(arcade.Window):
                     self.enemy_hp = enemy_data["hp"]
                     self.enemy_max_hp = enemy_data["hp"]
 
-                    # Wenn der Gegner "Köpek Franz" ist, zeige die Erklärungs-Dialogsequenz.
-                    # Bei allen anderen Gegnern direkt in den Kampf starten.
+
                     if self.current_enemy == "Köpek Franz":
                         self.state = "dialog"
                         self.dialog_index = 0
