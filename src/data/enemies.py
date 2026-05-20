@@ -1,7 +1,7 @@
 """Enemy stat sheets and their texture paths (relative to BASE_URL)."""
 
 ENEMIES = {
-    "Köpek Franz": {"xp": 15, "hp": 100},
+    "Köpek Franz": {"xp": 100, "hp": 100},
     "Altunyarrak": {"xp": 20, "hp": 150},
 }
 

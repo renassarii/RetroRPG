@@ -324,10 +324,10 @@ class Game(arcade.Window):
         self._roll_first_turn()
 
     def _handle_battle_input(self, key):
-        if key == arcade.key.LEFT:
+        if key == arcade.key.J:
             self.selected = (self.selected - 1) % len(BATTLE_MENU)
             return
-        if key == arcade.key.RIGHT:
+        if key == arcade.key.L:
             self.selected = (self.selected + 1) % len(BATTLE_MENU)
             return
         if key == arcade.key.SPACE and self.player_turn:
@@ -360,11 +360,11 @@ class Game(arcade.Window):
         scroll = getattr(self, attr_scroll)
         visible_count = getattr(self, visible)
 
-        if key == arcade.key.UP and selected > 0:
+        if key == arcade.key.I and selected > 0:
             selected -= 1
             if selected < scroll:
                 scroll = selected
-        elif key == arcade.key.DOWN and selected < length - 1:
+        elif key == arcade.key.K and selected < length - 1:
             selected += 1
             if selected >= scroll + visible_count:
                 scroll = selected - visible_count + 1
