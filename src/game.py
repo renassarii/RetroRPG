@@ -29,8 +29,18 @@ from src.ui.scenes import draw_scene
 from src.utils.textures import load_texture_from_url
 
 
-PLAYER_SPAWN = (200, 320)
+PLAYER_SPAWN = (20, 250)
 ENEMY_BATTLE_POS = (600, 320)
+
+MAPS = {
+    "beach": "assets/images/backgrounds/beach.png",
+    "forest_1": "assets/images/backgrounds/forrest_start.png",
+}
+
+MAP_SPAWNS = {
+    "beach": (200, 40),
+    "forest_1": (200, 800),
+}
 
 
 class Game(arcade.Window):
@@ -48,6 +58,7 @@ class Game(arcade.Window):
         self.keys_held = set()
 
     def _init_state(self):
+        self.dead_enemies = set()
         self.state = "explore"
         self.dialog_index = 0
         self.after_battle = False
@@ -57,6 +68,9 @@ class Game(arcade.Window):
         self.message_timer = 0
         self.post_battle_xp = None
         self.damage_numbers = []
+        self.current_map = "beach"
+        self.map_switch_lock = False
+        self.fade = 0
 
     def _load_textures(self):
         self.background1 = load_texture_from_url(
@@ -91,7 +105,10 @@ class Game(arcade.Window):
     def _init_world(self):
         self.map_img, self.map_pixels = world.load_map(self.width, self.height)
 
-    def change_map(self, background_path):
+    def change_map(self, map_name):
+        self.current_map = map_name
+
+        background_path = MAPS[map_name]
 
         self.map_img, self.map_pixels = world.load_map(
             self.width,
@@ -99,24 +116,36 @@ class Game(arcade.Window):
             background_path
         )
 
-        self.background1 = load_texture_from_url(
-            BASE_URL + background_path
-        )
+        self.background1 = load_texture_from_url(BASE_URL + background_path)
+
+        self._spawn_enemies_for_map()
 
 
     def _init_sprites(self):
         self.player = arcade.Sprite(self._player_texture, 2.5)
         self.player_list = arcade.SpriteList()
         self.enemy_list = arcade.SpriteList()
-
-        for name, x, y in INITIAL_ENEMY_SPAWNS:
-            self.spawn_enemy(name, x, y)
-
         self.player_list.append(self.player)
 
         self.enemy = None
         self.current_enemy = None
         self.set_spawn_points()
+        self._spawn_enemies_for_map()  # 👈 NUR DAS
+
+    def _spawn_enemies_for_map(self):
+        new_list = arcade.SpriteList()
+
+        for enemy_id, name, x, y, m in INITIAL_ENEMY_SPAWNS:
+            if m != self.current_map:
+                continue
+
+            if enemy_id in self.dead_enemies:
+                continue
+
+            enemy = self.spawn_enemy(enemy_id, name, x, y, m)
+            new_list.append(enemy)
+
+        self.enemy_list = new_list
 
     def _init_player_stats(self):
         self.player_hp = 100
@@ -151,13 +180,15 @@ class Game(arcade.Window):
         self.item_scroll = 0
         self.visible_item = 3
 
-    def spawn_enemy(self, name, x, y):
+    def spawn_enemy(self, enemy_id, name, x, y, map_name):
         enemy = arcade.Sprite()
         enemy.texture = self.enemy_textures[name]
         enemy.scale = 2.5
         enemy.center_x = x
         enemy.center_y = y
         enemy.name = name
+        enemy.enemy_id = enemy_id
+        enemy.map_name = map_name
         self.enemy_list.append(enemy)
         return enemy
 
@@ -178,6 +209,20 @@ class Game(arcade.Window):
     def on_draw(self):
         self.clear()
         draw_scene(self)
+        if self.fade > 0:
+            alpha = int(max(0, min(255, self.fade * 255)))
+
+            arcade.draw_rect_filled(
+                arcade.rect.XYWH(
+                    self.width / 2,
+                    self.height / 2,
+                    self.width,
+                    self.height,
+                ),
+                (0, 0, 0, alpha),
+            )
+
+            self.fade -= 0.05
 
     def on_update(self, delta_time):
         if self.state == "battle" and self.enemy_turn:
@@ -236,14 +281,31 @@ class Game(arcade.Window):
         ):
             self.player.center_y = new_y
 
-        # unten aus der map
-        if self.player.center_y < 0:
-            self.change_map(
-                "assets/images/backgrounds/cave.png"
-            )
 
-            # spieler oben spawnen
-            self.player.center_y = self.height - 100
+
+        # unten aus der map
+        # unten raus
+        # unten raus
+        if self.player.center_y < 0 and self.current_map == "beach":
+            self.map_switch_lock = True
+            self.fade = 1.0
+
+            self.change_map("forest_1")
+            self.player.center_x, self.player.center_y = MAP_SPAWNS[self.current_map]
+
+            self.map_switch_lock = False
+
+
+        # oben raus
+        elif self.player.center_y > self.height and self.current_map == "forest_1":
+            self.map_switch_lock = True
+            self.fade = 1.0
+
+            self.change_map("beach")
+            self.player.center_x, self.player.center_y = MAP_SPAWNS[self.current_map]
+
+            self.map_switch_lock = False
+
 
     def on_key_press(self, key, modifiers):
         self.keys_held.add(key)
@@ -283,13 +345,19 @@ class Game(arcade.Window):
             apply_level_choice(self)
 
     def _try_interact(self):
-        for enemy in self.enemy_list:
+        active_enemies = [
+            e for e in self.enemy_list
+            if e.map_name == self.current_map
+        ]
+
+        for enemy in active_enemies:
             dist = arcade.get_distance_between_sprites(self.player, enemy)
             if dist >= 80:
                 continue
 
             self.enemy = enemy
             self.current_enemy = enemy.name
+            self.current_enemy_id = enemy.enemy_id
 
             enemy_data = ENEMIES[self.current_enemy]
             self.enemy_hp = enemy_data["hp"]

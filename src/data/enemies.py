@@ -12,6 +12,6 @@ ENEMY_TEXTURE_PATHS = {
 
 
 INITIAL_ENEMY_SPAWNS = [
-    ("Köpek Franz", 500, 200),
-    ("Altunyarrak", 400, 300),
+    ("franz_1","Köpek Franz", 500, 200, "beach"),
+    ("Altunyarrak_1","Altunyarrak", 400, 300, "forest_1"),
 ]

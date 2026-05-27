@@ -154,11 +154,19 @@ def _resolve_escape(game):
 
 def _check_battle_end(game):
     if game.enemy_hp <= 0:
-        game.after_battle = True
+
+        # mark enemy as dead (WICHTIG)
+        if game.current_enemy_id is not None:
+            game.dead_enemies.add(game.current_enemy_id)
 
         xp_gain = ENEMIES[game.current_enemy]["xp"]
         game.player_xp += xp_gain
         game.message = f"+{xp_gain} XP"
+
+        game.after_battle = True
+
+        # ❗ NICHT entfernen aus enemy_list hier!
+        # ❗ NICHT game.enemy = None hier!
 
         if game.player_xp >= game.player_max_xp:
             game.player_xp -= game.player_max_xp
@@ -168,14 +176,23 @@ def _check_battle_end(game):
             game.selected_4 = 0
             return
 
-        xp_to_next = max(0, game.player_max_xp - game.player_xp)
-        game.post_battle_xp = xp_to_next
+        game.post_battle_xp = max(0, game.player_max_xp - game.player_xp)
         game.state = "post_battle"
         return
 
     if game.player_hp <= 0:
         game.state = "gameover"
+def _dismiss_post_battle(self):
+    if self.enemy:
+        try:
+            self.enemy.kill()
+        except:
+            pass
 
+    self.enemy = None
+    self.state = "explore"
+    self.after_battle = False
+    self.post_battle_xp = None
 
 def perform_enemy_turn(game):
     """Resolve a single enemy action. Caller decides timing via enemy_timer."""
